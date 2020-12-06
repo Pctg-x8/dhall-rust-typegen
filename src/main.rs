@@ -6,8 +6,8 @@ pub enum ElementTree {
     BoolType, NaturalType, IntegerType, DoubleType, TextType,
     OptionalType(Box<ElementTree>),
     ListType(Box<ElementTree>),
-    RecordType(HashMap<String, ElementTree>),
-    UnionType(HashMap<String, Option<ElementTree>>),
+    RecordType(Vec<(String, ElementTree)>),
+    UnionType(Vec<(String, Option<ElementTree>)>),
     RecordLiteral(HashMap<String, ElementTree>),
     UnionValue(String, Option<Box<ElementTree>>)
 }
@@ -39,33 +39,86 @@ impl ElementTree {
         }
     }
 
-    pub fn emit_type_code(&self, type_name: Option<&str>) -> String {
+    pub fn emit_inline_type<'s>(
+        &'s self, type_ids: &mut HashMap<ItemType<'s>, usize>, type_name_slots: &mut Vec<Option<&'s str>>
+    ) -> InlineType {
         match self {
-            Self::BoolType => String::from("bool"),
-            Self::NaturalType => String::from("u64"),
-            Self::IntegerType => String::from("i64"),
-            Self::DoubleType => String::from("f64"),
-            Self::TextType => String::from("String"),
-            Self::RecordType(es) => format!(
-                "pub struct {} {{ {} }}",
-                type_name.unwrap_or("AnonStructure"),
-                es.iter().map(|(k, v)| format!("pub {}: {}", k, Self::emit_type_code(v, None)))
-                    .collect::<Vec<_>>()
-                    .join(", ")
+            Self::BoolType => InlineType::Bool,
+            Self::NaturalType => InlineType::Nat,
+            Self::IntegerType => InlineType::Int,
+            Self::DoubleType => InlineType::Dbl,
+            Self::TextType => InlineType::Txt,
+            Self::OptionalType(x) => InlineType::Opt(Box::new(x.emit_inline_type(type_ids, type_name_slots))),
+            Self::ListType(x) => InlineType::List(Box::new(x.emit_inline_type(type_ids, type_name_slots))),
+            Self::RecordType(_) | Self::RecordLiteral(_) | Self::UnionType(_) => {
+                let ty = self.emit_item_type(type_ids, type_name_slots);
+                let id = *type_ids.entry(ty)
+                    .or_insert_with(|| { type_name_slots.push(None); type_name_slots.len() - 1 });
+                InlineType::TypeRef(id)
+            },
+            _ => unimplemented!("Unhandled subtree: {:?}", self)
+        }
+    }
+    pub fn emit_item_type<'s>(
+        &'s self, type_ids: &mut HashMap<ItemType<'s>, usize>, type_name_slots: &mut Vec<Option<&'s str>>
+    ) -> ItemType<'s> {
+        match self {
+            Self::RecordType(es) => ItemType::Struct(
+                es.iter().map(|(k, v)| (k as _, v.emit_inline_type(type_ids, type_name_slots))).collect()
             ),
-            Self::UnionType(es) => format!(
-                "pub enum {} {{ {} }}",
-                type_name.unwrap_or("AnonEnum"),
-                es.iter().map(|(k, v)| if let Some(v) = v {
-                    format!("{}({})", k, v.emit_type_code(None))
-                } else { String::from(k) }).collect::<Vec<_>>().join(", ")
+            Self::UnionType(es) => ItemType::Enum(
+                es.iter().map(|(k, v)| (k as _, v.as_ref().map(|x| x.emit_inline_type(type_ids, type_name_slots)))).collect()
             ),
             Self::RecordLiteral(es) => if let Some(ty) = es.get("Type") {
-                ty.emit_type_code(type_name)
+                ty.emit_item_type(type_ids, type_name_slots)
             } else {
                 panic!("No `Type` entry in record")
             },
             _ => unimplemented!("Unhandled Element: {:?}", self)
+        }
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub enum InlineType {
+    Bool, Nat, Int, Dbl, Txt, Opt(Box<InlineType>), List(Box<InlineType>), TypeRef(usize)
+}
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub enum ItemType<'s> {
+    Struct(Vec<(&'s str, InlineType)>),
+    Enum(Vec<(&'s str, Option<InlineType>)>)
+}
+impl InlineType {
+    pub fn emit_code<'s>(&self, type_names: &[Option<&'s str>]) -> std::borrow::Cow<'s, str> {
+        match self {
+            Self::Bool => From::from("bool"),
+            Self::Nat => From::from("u64"),
+            Self::Int => From::from("i64"),
+            Self::Dbl => From::from("f64"),
+            Self::Txt => From::from("String"),
+            Self::Opt(x) => From::from(format!("Option<{}>", x.emit_code(type_names))),
+            Self::List(x) => From::from(format!("Vec<{}>", x.emit_code(type_names))),
+            &Self::TypeRef(tyid) => type_names.get(tyid).and_then(|x| x.map(From::from))
+                .unwrap_or_else(|| From::from(format!("AnonType{}", tyid)))
+        }
+    }
+}
+impl<'s> ItemType<'s> {
+    pub fn emit_code(&self, name: &str, type_names: &[Option<&'s str>]) -> String {
+        match self {
+            Self::Struct(es) => format!(
+                "pub struct {} {{ {} }}",
+                name,
+                es.iter().map(|(k, v)| format!("pub {}: {}", k, v.emit_code(type_names))).collect::<Vec<_>>().join(", ")
+            ),
+            Self::Enum(es) => format!(
+                "pub enum {} {{ {} }}",
+                name,
+                es.iter().map(|(k, v)| match v {
+                    Some(ty) => format!("{}({})", k, ty.emit_code(type_names)),
+                    None => String::from(*k)
+                }).collect::<Vec<_>>().join(", ")
+            )
         }
     }
 }
@@ -81,12 +134,27 @@ fn main() {
     let tree = ElementTree::from_nir(normalized.as_nir());
     println!("ty: {:?}", tree);
 
+    let mut type_ids = HashMap::new();
+    let mut type_name_slots = Vec::new();
     let tycode = match tree {
-        ElementTree::RecordLiteral(es) => {
-            // toplevel record
-            es.iter().map(|(k, v)| v.emit_type_code(Some(k))).collect()
+        ElementTree::RecordLiteral(ref es) => {
+            // toplevel is record
+            es.iter().map(|(k, v)| {
+                let xty = v.emit_item_type(&mut type_ids, &mut type_name_slots);
+                let tyid = *type_ids.entry(xty.clone())
+                    .or_insert_with(|| { type_name_slots.push(None); type_name_slots.len() - 1});
+                type_name_slots[tyid] = Some(k);
+                (tyid, xty)
+            }).collect()
         },
-        _ => tree.emit_type_code(None)
+        _ => vec![(0, tree.emit_item_type(&mut type_ids, &mut type_name_slots))]
     };
-    println!("tycode: {}", tycode);
+    println!("tycode: {:?}", tycode);
+    println!("type names: {:?}", type_name_slots);
+
+    let tycode = type_ids.into_iter().map(|(ty, tx)| match type_name_slots.get(tx).and_then(|x| x.as_deref()) {
+        Some(n) => ty.emit_code(n, &type_name_slots),
+        None => ty.emit_code(&format!("AnonType{}", tx), &type_name_slots)
+    }).collect::<Vec<_>>().join("\n");
+    println!("generated: {}", tycode);
 }
