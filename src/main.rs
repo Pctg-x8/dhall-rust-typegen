@@ -1,5 +1,5 @@
 
-import_macro::import_dhall_schema!("./config.dhall");
+dhall_schema_import::import!("./config.dhall");
 
 fn main() {
 	let input_file = std::env::args().nth(1).expect("no input file");

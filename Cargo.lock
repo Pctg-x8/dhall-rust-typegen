@@ -239,7 +239,7 @@ dependencies = [
 name = "dhall-type-import"
 version = "0.1.0"
 dependencies = [
- "import_macro",
+ "dhall_schema_import",
  "serde",
  "serde_dhall",
 ]
@@ -251,6 +251,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf6cff1e2ddd03851652e0cde982b01dc877c9fc9da9ba25ad4241a151945f09"
 dependencies = [
  "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "dhall_schema_import"
+version = "0.1.0"
+dependencies = [
+ "dhall 0.9.0 (git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2)",
  "proc-macro2",
  "quote",
  "syn",
@@ -555,16 +565,6 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "import_macro"
-version = "0.1.0"
-dependencies = [
- "dhall 0.9.0 (git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2)",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

@@ -59,7 +59,7 @@ impl emitter::ItemType<'_> {
 }
 
 #[proc_macro]
-pub fn import_dhall_schema(t: TokenStream) -> TokenStream {
+pub fn import(t: TokenStream) -> TokenStream {
     let file_path = syn::parse_macro_input!(t as syn::LitStr);
 
     let parsed = dhall::Parsed::parse_file(file_path.value().as_ref()).expect("Failed to parse schema file");

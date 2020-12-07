@@ -7,6 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-import_macro = { path = "./import_macro" }
+dhall_schema_import = { path = "./import_macro" }
 serde = "1.0"
 serde_dhall = "0.9"
