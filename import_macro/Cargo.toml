@@ -1,12 +1,16 @@
 [package]
-name = "dhall-type-import"
+name = "import_macro"
 version = "0.1.0"
 authors = ["S.Percentage <Syn.Tri.Naga@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+proc-macro = true
+
 [dependencies]
-import_macro = { path = "./import_macro" }
-serde = "1.0"
-serde_dhall = "0.9"
+dhall = { git = "https://github.com/Nadrieril/dhall-rust", rev = "711ad900153aedb7b35896c0705c932972edded2" }
+syn = "1.0"
+quote = "1.0"
+proc-macro2 = "1.0"

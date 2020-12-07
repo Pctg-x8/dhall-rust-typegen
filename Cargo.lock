@@ -2,6 +2,15 @@
 # It is not intended for manual editing.
 [[package]]
 name = "abnf"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47feb9fbcef700639ef28e04ca2a87eab8161a01a075ee227b15c90143805462"
+dependencies = [
+ "nom",
+]
+
+[[package]]
+name = "abnf"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76d5f963d2236fd5701b660a9733bd22a5be300267955c71fa03bdf75ecb30b5"
@@ -22,12 +31,24 @@ dependencies = [
 [[package]]
 name = "abnf_to_pest"
 version = "0.5.0"
-source = "git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2#711ad900153aedb7b35896c0705c932972edded2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "372baaa5d3a422d8816b513bcdb2c120078c8614f7ecbcc3baf34a1634bbbe2e"
 dependencies = [
- "abnf",
+ "abnf 0.6.1",
  "indexmap",
  "itertools",
- "pretty",
+ "pretty 0.5.2",
+]
+
+[[package]]
+name = "abnf_to_pest"
+version = "0.5.0"
+source = "git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2#711ad900153aedb7b35896c0705c932972edded2"
+dependencies = [
+ "abnf 0.9.0",
+ "indexmap",
+ "itertools",
+ "pretty 0.10.0",
 ]
 
 [[package]]
@@ -170,9 +191,33 @@ checksum = "8aebca1129a03dc6dc2b127edd729435bbc4a37e1d5f4d7513165089ceb02634"
 [[package]]
 name = "dhall"
 version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7930c7ac2b3989a07a2a3400bf9f4bc1c65074f330e3ff22b372a4d386fabd0"
+dependencies = [
+ "abnf_to_pest 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "annotate-snippets",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "once_cell",
+ "percent-encoding",
+ "pest",
+ "pest_consume",
+ "pest_generator",
+ "quote",
+ "reqwest",
+ "serde",
+ "serde_cbor",
+ "sha2",
+ "url",
+]
+
+[[package]]
+name = "dhall"
+version = "0.9.0"
 source = "git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2#711ad900153aedb7b35896c0705c932972edded2"
 dependencies = [
- "abnf_to_pest",
+ "abnf_to_pest 0.5.0 (git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2)",
  "annotate-snippets",
  "hex",
  "itertools",
@@ -194,7 +239,21 @@ dependencies = [
 name = "dhall-type-import"
 version = "0.1.0"
 dependencies = [
- "dhall",
+ "import_macro",
+ "serde",
+ "serde_dhall",
+]
+
+[[package]]
+name = "dhall_proc_macros"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf6cff1e2ddd03851652e0cde982b01dc877c9fc9da9ba25ad4241a151945f09"
+dependencies = [
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -214,6 +273,12 @@ checksum = "d3dd60d1080a57a05ab032377049e0591415d2b31afd7028356dbf3cc6dcb066"
 dependencies = [
  "generic-array 0.14.4",
 ]
+
+[[package]]
+name = "doc-comment"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "either"
@@ -490,6 +555,16 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
+]
+
+[[package]]
+name = "import_macro"
+version = "0.1.0"
+dependencies = [
+ "dhall 0.9.0 (git+https://github.com/Nadrieril/dhall-rust?rev=711ad900153aedb7b35896c0705c932972edded2)",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -896,12 +971,21 @@ checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
 
 [[package]]
 name = "pretty"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f60c0d9f6fc88ecdd245d90c1920ff76a430ab34303fc778d33b1d0a4c3bf6d3"
+dependencies = [
+ "typed-arena 1.7.0",
+]
+
+[[package]]
+name = "pretty"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad9940b913ee56ddd94aec2d3cd179dd47068236f42a1a6415ccf9d880ce2a61"
 dependencies = [
  "arrayvec",
- "typed-arena",
+ "typed-arena 2.0.1",
 ]
 
 [[package]]
@@ -1070,6 +1154,9 @@ name = "serde"
 version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b88fa983de7720629c9387e9f517353ed404164b1e482c970a90c1a4aaf7dc1a"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_cbor"
@@ -1079,6 +1166,30 @@ checksum = "1e18acfa2f90e8b735b2836ab8d538de304cbb6729a7360729ea5a895d15a622"
 dependencies = [
  "half",
  "serde",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.117"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbd1ae72adb44aab48f325a02444a5fc079349a8d804c1fc922aed3f7454c74e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "serde_dhall"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f80d945a711c648e559c4d39832379f36a303d393fca4719080de51701266f38"
+dependencies = [
+ "dhall 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dhall_proc_macros",
+ "doc-comment",
+ "serde",
+ "url",
 ]
 
 [[package]]
@@ -1277,6 +1388,12 @@ name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
+
+[[package]]
+name = "typed-arena"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9b2228007eba4120145f785df0f6c92ea538f5a3635a612ecf4e334c8c1446d"
 
 [[package]]
 name = "typed-arena"
